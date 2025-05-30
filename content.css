@@ -1,0 +1,34 @@
+/* Content Script CSS - Element Highlighting */
+
+#font-inspector-highlight {
+    position: absolute;
+    border: 2px solid #3498db;
+    background: rgba(52, 152, 219, 0.1);
+    pointer-events: none;
+    z-index: 999999;
+    display: none;
+    box-shadow: 0 0 10px rgba(52, 152, 219, 0.5);
+    transition: all 0.1s ease;
+    border-radius: 3px;
+}
+
+#font-inspector-highlight::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    border-radius: 3px;
+    pointer-events: none;
+}
+
+/* Inspection mode cursor */
+body.font-inspector-active {
+    cursor: crosshair !important;
+}
+
+body.font-inspector-active * {
+    cursor: crosshair !important;
+} 

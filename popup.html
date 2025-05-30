@@ -3,29 +3,155 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Renk Seçici</title>
+    <title>Renk & Font Seçici</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="container">
-        <h2>Renk Seçici</h2>
-        
-        <div class="color-picker-container">
-            <label for="colorPicker">Renk Seçin:</label>
-            <input type="color" id="colorPicker" value="#3498db">
+        <!-- Header -->
+        <div class="header">
+            <h1>Seçici Araçları</h1>
         </div>
+
+        <!-- Tab Navigation -->
+        <div class="tab-navigation">
+            <button class="tab-btn active" data-tab="color">
+                <span class="tab-icon">🎨</span>
+            </button>
+            <button class="tab-btn" data-tab="font">
+                <span class="tab-icon">🔤</span>
+            </button>
+        </div>
+
+        <!-- Tab Contents -->
+        <div class="tab-content">
+            
+            <!-- Color Tab -->
+            <div class="tab-panel active" id="color-panel">
+                <div class="panel-header">
+                    <h3>Renk Seçici</h3>
+                </div>
         
-        <div class="color-display">
-            <div class="color-preview" id="colorPreview"></div>
-            <div class="color-info">
-                <label for="hexCode">Hex Kodu:</label>
-                <div class="hex-container">
-                    <input type="text" id="hexCode" readonly value="#3498db">
-                    <button id="copyBtn" title="Kopyala">📋</button>
+                <!-- Gizli color picker -->
+                <input type="color" id="colorPicker" value="#3498db" style="display: none;">
+        
+                <!-- Ana renk seçim alanı -->
+                <div class="main-color-section">
+                    <div class="color-preview main-color" id="colorPreview" title="Renk seçmek için tıklayın"></div>
+                    <div class="color-codes">
+                        <div class="color-code-group">
+                            <label>Hex:</label>
+                            <input type="text" id="hexCode" readonly value="#3498db" class="copyable-input" title="Kopyalamak için tıklayın">
+                        </div>
+                        <div class="color-code-group">
+                            <label>RGB:</label>
+                            <input type="text" id="rgbCode" readonly value="rgb(52, 152, 219)" class="copyable-input" title="Kopyalamak için tıklayın">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Renk tonlamaları -->
+                <div class="color-variations">
+                    <label>Renk Tonlamaları:</label>
+                    <div class="color-palette">
+                        <div class="color-variation" data-variation="lighter2" title="2 ton açık">
+                            <div class="variation-preview" id="lighter2Preview"></div>
+                            <span class="variation-label">+2</span>
+                        </div>
+                        <div class="color-variation" data-variation="lighter1" title="1 ton açık">
+                            <div class="variation-preview" id="lighter1Preview"></div>
+                            <span class="variation-label">+1</span>
+                        </div>
+                        <div class="color-variation active" data-variation="original" title="Orijinal renk">
+                            <div class="variation-preview" id="originalPreview"></div>
+                            <span class="variation-label">0</span>
+                        </div>
+                        <div class="color-variation" data-variation="darker1" title="1 ton koyu">
+                            <div class="variation-preview" id="darker1Preview"></div>
+                            <span class="variation-label">-1</span>
+                        </div>
+                        <div class="color-variation" data-variation="darker2" title="2 ton koyu">
+                            <div class="variation-preview" id="darker2Preview"></div>
+                            <span class="variation-label">-2</span>
+                        </div>
+                    </div>
                 </div>
             </div>
+
+            <!-- Font & Size Tab -->
+            <div class="tab-panel" id="font-panel">
+                <div class="panel-header">
+                    <h3>Font & Punto Algılayıcı</h3>
+                    <button class="inspect-btn" id="inspectFont" title="Sayfadaki bir elementi seçin">
+                        🔍 Element Seç
+                    </button>
+                </div>
+                
+                <div class="info-card" id="fontInfo">
+                    <div class="info-placeholder">
+                        <div class="placeholder-icon">🔤</div>
+                        <p>Bir elementi seçmek için "Element Seç" butonuna tıklayın</p>
+                    </div>
+                    
+                    <div class="info-content" style="display: none;">
+                        <!-- 1. Satır: Ana Font + Font Family -->
+                        <div class="info-row">
+                            <div class="dual-input-container">
+                                <div class="input-group">
+                                    <span class="input-label">Ana Font:</span>
+                                    <input type="text" id="primaryFont" readonly>
+                                </div>
+                                <div class="input-group">
+                                    <span class="input-label">Font Family:</span>
+                                    <input type="text" id="fontFamily" readonly>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 2. Satır: Font Ağırlığı + Punto -->
+                        <div class="info-row">
+                            <div class="dual-input-container">
+                                <div class="input-group">
+                                    <span class="input-label">Ağırlık:</span>
+                                    <input type="text" id="fontWeight" readonly>
+                                </div>
+                                <div class="input-group">
+                                    <span class="input-label">Punto:</span>
+                                    <input type="text" id="fontSizePt" readonly class="copyable-input" title="Kopyalamak için tıklayın">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 3. Satır: Pixel + REM -->
+                        <div class="info-row">
+                            <div class="dual-input-container">
+                                <div class="input-group">
+                                    <span class="input-label">Piksel:</span>
+                                    <input type="text" id="fontSizePx" readonly class="copyable-input" title="Kopyalamak için tıklayın">
+                                </div>
+                                <div class="input-group">
+                                    <span class="input-label">REM:</span>
+                                    <input type="text" id="fontSizeRem" readonly class="copyable-input" title="Kopyalamak için tıklayın">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 4. Satır: Element -->
+                        <div class="info-row">
+                            <input type="text" id="elementInfo" readonly class="copyable-input" title="Kopyalamak için tıklayın">
+                        </div>
+                        
+                        <!-- 5. Satır: Element Metni -->
+                        <div class="info-row">
+                            <input type="text" id="elementText" readonly class="copyable-input" title="Kopyalamak için tıklayın">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </div>
         
+        <!-- Status Bar -->
         <div class="status" id="status"></div>
     </div>
     

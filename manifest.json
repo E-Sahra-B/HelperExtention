@@ -1,14 +1,25 @@
 {
   "manifest_version": 3,
-  "name": "Renk Seçici",
-  "version": "1.0",
-  "description": "Basit ve kullanışlı renk seçici eklentisi. Herhangi bir renkten hex kodunu alın.",
+  "name": "Renk & Font Seçici",
+  "version": "2.0",
+  "description": "Renk, font ve punto bilgilerini tespit eden gelişmiş seçici eklentisi.",
   "permissions": [
-    "clipboardWrite"
+    "clipboardWrite",
+    "activeTab",
+    "scripting"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "css": ["content.css"]
+    }
   ],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Renk Seçici"
-  },
-  "default_locale": "tr"
+    "default_title": "Renk & Font Seçici"
+  }
 } 
