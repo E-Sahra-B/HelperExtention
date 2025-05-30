@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "Renk Seçici",
+  "version": "1.0",
+  "description": "Basit ve kullanışlı renk seçici eklentisi. Herhangi bir renkten hex kodunu alın.",
+  "permissions": [
+    "clipboardWrite"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Renk Seçici"
+  },
+  "default_locale": "tr"
+} 
