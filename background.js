@@ -1,5 +1,5 @@
 // Background Script - State Management & Communication Hub
-// Bu script popup kapandığında bile state'i korur
+// This script preserves state even when popup is closed
 
 let extensionState = {
     isInspecting: false,
@@ -7,21 +7,26 @@ let extensionState = {
     lastElementData: null,
     lastSpacingData: null,
     contentScriptReady: false,
-    activeTabId: null
+    activeTabId: null,
+    popupWasOpen: false,
+    lastActiveTab: 'color' // Default to color tab
 };
 
-// Install ve startup
+// Install and startup
 chrome.runtime.onInstalled.addListener(() => {
-    console.log('Extension installed');
+    // Remove debug console.log
+    // console.log('Extension installed');
 });
 
-// Popup ve content script arasındaki mesajlaşmayı yönet
+// Manage messaging between popup and content script
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    console.log('Background received message:', message.action, 'from:', sender);
+    // Remove debug console.log
+    // console.log('Background received message:', message.action, 'from:', sender);
 
     switch (message.action) {
         case 'getState':
-            // Popup açıldığında state'i gönder
+            // Send state when popup opens
+            extensionState.popupWasOpen = true;
             sendResponse({
                 state: extensionState,
                 success: true
@@ -29,49 +34,76 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             break;
 
         case 'setState':
-            // State'i güncelle
+            // Update state
             extensionState = { ...extensionState, ...message.data };
-            console.log('State updated:', extensionState);
+            // Remove debug console.log
+            // console.log('State updated:', extensionState);
+            sendResponse({ success: true });
+            break;
+
+        case 'setActiveTab':
+            // Store the active tab when user switches tabs
+            extensionState.lastActiveTab = message.tab;
             sendResponse({ success: true });
             break;
 
         case 'startInspecting':
-            // Content script'e inspection başlat komutu gönder
+            // Mark that popup was open when inspection started
+            extensionState.popupWasOpen = true;
+            extensionState.lastActiveTab = message.activeTab || extensionState.lastActiveTab;
+            // Send start inspection command to content script
             handleStartInspecting(message, sender, sendResponse);
             break;
 
         case 'stopInspecting':
-            // Content script'e inspection durdur komutu gönder
+            // Send stop inspection command to content script
             handleStopInspecting(message, sender, sendResponse);
             break;
 
         case 'elementSelected':
-            // Content script'ten element seçimi geldi
+            // Element selection received from content script
             extensionState.lastElementData = message.data;
-            // Spacing verisini de ayrıca sakla
+            // Also store spacing data separately
             if (message.data.spacing) {
                 extensionState.lastSpacingData = message.data;
             }
             extensionState.isInspecting = false;
             extensionState.inspectionType = null;
             
-            // Popup'a bildir (eğer açıksa)
+            // Notify popup (if open)
             broadcastToPopup('elementSelected', message.data);
+            
+            // Auto-reopen popup if it was open during inspection
+            if (extensionState.popupWasOpen) {
+                setTimeout(async () => {
+                    try {
+                        await chrome.action.openPopup();
+                        // Remove debug console.log
+                        // console.log('Popup auto-reopened after element selection');
+                    } catch (error) {
+                        // Remove debug console.log
+                        // console.log('Could not auto-reopen popup:', error);
+                    }
+                }, 100); // Small delay to ensure proper timing
+            }
+            
             sendResponse({ success: true });
             break;
 
         case 'saveSpacingData':
-            // Spacing verisini kaydet
+            // Save spacing data
             extensionState.lastSpacingData = message.data;
-            console.log('Spacing data saved:', message.data);
+            // Remove debug console.log
+            // console.log('Spacing data saved:', message.data);
             sendResponse({ success: true });
             break;
 
         case 'contentScriptReady':
-            // Content script hazır
+            // Content script is ready
             extensionState.contentScriptReady = true;
             extensionState.activeTabId = sender.tab?.id;
-            console.log('Content script ready on tab:', sender.tab?.id);
+            // Remove debug console.log
+            // console.log('Content script ready on tab:', sender.tab?.id);
             sendResponse({ success: true });
             break;
 
@@ -108,7 +140,7 @@ async function handleStartInspecting(message, sender, sendResponse) {
         extensionState.isInspecting = true;
         extensionState.inspectionType = message.type || 'font';
 
-        // Content script'e mesaj gönder
+        // Send message to content script
         const response = await chrome.tabs.sendMessage(activeTab.id, {
             action: 'startInspecting'
         });
@@ -140,26 +172,26 @@ async function handleStopInspecting(message, sender, sendResponse) {
     }
 }
 
-// Popup'a mesaj yayınla (eğer açıksa)
+// Broadcast message to popup (if open)
 function broadcastToPopup(action, data) {
-    // Popup'ın açık olup olmadığını kontrol etmek zor
-    // Bu yüzden try-catch ile deniyoruz
+    // It's difficult to check if popup is open
+    // So we try with try-catch
     try {
         chrome.runtime.sendMessage({
             action: action,
             data: data,
             fromBackground: true
         }).catch(() => {
-            // Popup kapalı, ses çıkarma
+            // Popup is closed, don't make noise
         });
     } catch (error) {
-        // Popup kapalı veya başka hata
+        // Popup is closed or other error
     }
 }
 
-// Tab değişikliklerini izle
+// Watch tab changes
 chrome.tabs.onActivated.addListener((activeInfo) => {
-    // Aktif tab değişti, inspection'ı durdur
+    // Active tab changed, stop inspection
     if (extensionState.isInspecting) {
         extensionState.isInspecting = false;
         extensionState.inspectionType = null;
@@ -167,7 +199,7 @@ chrome.tabs.onActivated.addListener((activeInfo) => {
     extensionState.contentScriptReady = false;
 });
 
-// Tab kapatılınca state temizle
+// Clean state when tab is closed
 chrome.tabs.onRemoved.addListener((tabId) => {
     if (extensionState.activeTabId === tabId) {
         extensionState.isInspecting = false;

@@ -9,55 +9,106 @@ class ExtensionController {
         this.currentTab = 'color';
         this.currentTabId = null;
         
+        this.initializeExtension();
+    }
+
+    async initializeExtension() {
+        // First load state from background, then initialize UI
+        await this.loadStateFromBackground();
         this.initializeUI();
         this.setupEventListeners();
-        this.loadStateFromBackground();
     }
 
     async loadStateFromBackground() {
         try {
             const response = await chrome.runtime.sendMessage({ action: 'getState' });
             if (response?.state) {
-                // Font bilgilerini yükle
+                // Restore the last active tab
+                if (response.state.lastActiveTab) {
+                    this.currentTab = response.state.lastActiveTab;
+                    this.switchTab(response.state.lastActiveTab);
+                }
+                
+                // Load font information
                 if (response.state.lastElementData) {
                     this.updateFontDisplay(response.state.lastElementData);
                 }
-                // Spacing bilgilerini yükle
+                // Load spacing information
                 if (response.state.lastSpacingData) {
                     this.updateSpacingDisplay(response.state.lastSpacingData);
                 }
+                
+                return true; // State was loaded successfully
             }
         } catch (error) {
-            console.log('State loading failed:', error);
-            // Extension yeniden yüklenmiş olabilir, sessiz bir şekilde devam et
+            // Extension might have been reloaded, continue silently
         }
+        return false; // No state was loaded
     }
 
     initializeUI() {
-        // İlk tab'ı aktif et
-        this.switchTab('color');
+        // Only activate default tab if no state was restored
+        if (!document.querySelector('.tab-btn.active')) {
+            this.switchTab('color');
+        }
         
-        // Renk seçici başlangıç değeri
+        // Color picker initial value
         const colorPicker = document.getElementById('colorPicker');
         const initialColor = colorPicker.value;
         this.updateColorDisplay(initialColor);
     }
 
     setupEventListeners() {
-        // Tab geçişleri
+        // Tab transitions
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 this.switchTab(e.currentTarget.dataset.tab);
             });
         });
 
-        // Renk seçici - gizli input
+        // Color picker - hidden input
     const colorPicker = document.getElementById('colorPicker');
-        colorPicker.addEventListener('input', (e) => {
-            this.updateColorDisplay(e.target.value);
+        colorPicker.addEventListener('input', async (e) => {
+            const selectedColor = e.target.value;
+            
+            // Update the display first
+            this.updateColorDisplay(selectedColor);
+            
+            // Close the color picker dialog
+            e.target.blur();
+            
+            // Automatically copy the hex color
+            try {
+                await navigator.clipboard.writeText(selectedColor.toUpperCase());
+                this.showStatus(`${selectedColor.toUpperCase()} copied!`, 'success');
+            } catch (error) {
+                console.error('Auto-copy error:', error);
+                this.showStatus('Color selected but copy failed', 'warning');
+            }
         });
 
-        // Color preview'a tıklayınca color picker'ı aç
+        // Also handle the 'change' event for when the picker is closed
+        colorPicker.addEventListener('change', async (e) => {
+            const selectedColor = e.target.value;
+            
+            // Close the color picker dialog
+            e.target.blur();
+            
+            // Only copy and close if it's different from current value
+            // (to avoid double-copying on some browsers)
+            const currentHex = document.getElementById('hexCode').value;
+            if (selectedColor.toUpperCase() !== currentHex) {
+                try {
+                    await navigator.clipboard.writeText(selectedColor.toUpperCase());
+                    this.showStatus(`${selectedColor.toUpperCase()} copied!`, 'success');
+                } catch (error) {
+                    console.error('Auto-copy error:', error);
+                    this.showStatus('Color selected but copy failed', 'warning');
+                }
+            }
+        });
+
+        // Open color picker when clicking on color preview
         const colorPreview = document.getElementById('colorPreview');
         if (colorPreview) {
             colorPreview.addEventListener('click', () => {
@@ -65,7 +116,7 @@ class ExtensionController {
             });
         }
 
-        // Hex kod input'una yazılan değerleri dinle
+        // Listen to hex code input values
         const hexCodeInput = document.getElementById('hexCode');
         if (hexCodeInput) {
             hexCodeInput.addEventListener('input', (e) => {
@@ -76,7 +127,7 @@ class ExtensionController {
             });
         }
 
-        // RGB kod input'una yazılan değerleri dinle
+        // Listen to RGB code input values
         const rgbCodeInput = document.getElementById('rgbCode');
         if (rgbCodeInput) {
             rgbCodeInput.addEventListener('input', (e) => {
@@ -87,7 +138,7 @@ class ExtensionController {
             });
         }
 
-        // Color variations'a tıklama event'i
+        // Color variations click event
         document.querySelectorAll('.color-variation').forEach(variation => {
             variation.addEventListener('click', (e) => {
                 const variationType = e.currentTarget.dataset.variation;
@@ -95,7 +146,7 @@ class ExtensionController {
             });
         });
 
-        // Compatible colors'a tıklama event'i
+        // Compatible colors click event
         document.querySelectorAll('.compatible-color').forEach(compatible => {
             compatible.addEventListener('click', (e) => {
                 const harmonyType = e.currentTarget.dataset.harmony;
@@ -103,14 +154,14 @@ class ExtensionController {
             });
         });
 
-        // Copyable input'lara click event ekle
+        // Add click events to copyable inputs
         document.addEventListener('click', (e) => {
             if (e.target.classList.contains('copyable-input')) {
                 this.copyInputValue(e.target);
             }
         });
 
-        // Inspect butonları
+        // Inspect buttons
         const inspectFontBtn = document.getElementById('inspectFont');
         if (inspectFontBtn) {
             inspectFontBtn.addEventListener('click', () => {
@@ -125,12 +176,12 @@ class ExtensionController {
             });
         }
 
-        // Klavye kısayolları
+        // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
             this.handleKeyboardShortcuts(e);
         });
 
-        // Background script'ten mesajları dinle
+        // Listen to messages from background script
         chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             if (message.action === 'elementSelected') {
                 if (this.isFontInspectorActive) {
@@ -141,7 +192,7 @@ class ExtensionController {
                     this.setInspectorState('spacing', false);
                 }
             } else if (message.action === 'inspectionStarted') {
-                // Hangi inspector aktif olduğunu kontrol et
+                // Check which inspector is active
                 if (this.isFontInspectorActive) {
                     this.setInspectorState('font', true);
                 } else if (this.isSpacingInspectorActive) {
@@ -155,7 +206,7 @@ class ExtensionController {
     }
 
     switchTab(tabName) {
-        // Önceki tab'ı deaktif et
+        // Deactivate previous tab
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.classList.remove('active');
         });
@@ -163,7 +214,7 @@ class ExtensionController {
             panel.classList.remove('active');
         });
 
-        // Yeni tab'ı aktif et
+        // Activate new tab
         const tabBtn = document.querySelector(`[data-tab="${tabName}"]`);
         const tabPanel = document.getElementById(`${tabName}-panel`);
         
@@ -171,30 +222,38 @@ class ExtensionController {
             tabBtn.classList.add('active');
             tabPanel.classList.add('active');
             this.currentTab = tabName;
+            
+            // Save current tab to background script
+            chrome.runtime.sendMessage({
+                action: 'setActiveTab',
+                tab: tabName
+            }).catch(error => {
+                // Failed to save tab state - continue silently
+            });
         }
     }
 
     updateColorDisplay(color) {
-        // Ana renk preview'ını güncelle
+        // Update main color preview
         const preview = document.getElementById('colorPreview');
         if (preview) preview.style.backgroundColor = color;
 
-        // Hex ve RGB kodlarını güncelle
+        // Update hex and RGB codes
     const hexCode = document.getElementById('hexCode');
         const rgbCode = document.getElementById('rgbCode');
         
         if (hexCode) hexCode.value = color.toUpperCase();
         
-        // Hex'i RGB'ye çevir
+        // Convert hex to RGB
         const rgb = this.hexToRgb(color);
         if (rgbCode && rgb) {
             rgbCode.value = `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
         }
 
-        // Renk tonlamalarını güncelle
+        // Update color variations
         this.updateColorVariations(color);
 
-        // Uyumlu renkleri güncelle
+        // Update compatible colors
         this.updateCompatibleColors(color);
     }
 
@@ -211,14 +270,14 @@ class ExtensionController {
         return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
     }
 
-    // Yeni HSL bazlı renk tonlama fonksiyonu
+    // New HSL-based color shading function
     adjustColorLightness(hexColor, amount) {
-        // Hex'i RGB'ye çevir
+        // Convert hex to RGB
         let r = parseInt(hexColor.substring(1, 3), 16);
         let g = parseInt(hexColor.substring(3, 5), 16);
         let b = parseInt(hexColor.substring(5, 7), 16);
 
-        // RGB'yi HSL'ye çevir
+        // Convert RGB to HSL
         r /= 255, g /= 255, b /= 255;
         let max = Math.max(r, g, b), min = Math.min(r, g, b);
         let h, s, l = (max + min) / 2;
@@ -236,11 +295,11 @@ class ExtensionController {
             h /= 6;
         }
 
-        // Lightness değerini ayarla
+        // Adjust lightness value
         l += amount / 100;
         l = Math.min(1, Math.max(0, l));
 
-        // HSL'yi tekrar RGB'ye çevir
+        // Convert HSL back to RGB
         if (s === 0) {
             r = g = b = l; // achromatic
         } else {
@@ -260,7 +319,7 @@ class ExtensionController {
             b = hue2rgb(p, q, h - 1/3);
         }
 
-        // RGB'yi tekrar Hex'e çevir
+        // Convert RGB back to hex
         r = Math.round(r * 255);
         g = Math.round(g * 255);
         b = Math.round(b * 255);
@@ -269,16 +328,16 @@ class ExtensionController {
     }
 
     updateColorVariations(baseColor) {
-        // Yeni HSL lightness bazlı renk tonlamaları oluştur
+        // Create new HSL lightness-based color variations
         const variations = {
-            lighter2: this.adjustColorLightness(baseColor, 20),  // %20 daha açık
-            lighter1: this.adjustColorLightness(baseColor, 10),  // %10 daha açık
-            original: baseColor,                                 // Orijinal
-            darker1: this.adjustColorLightness(baseColor, -10),  // %10 daha koyu
-            darker2: this.adjustColorLightness(baseColor, -20)   // %20 daha koyu
+            lighter2: this.adjustColorLightness(baseColor, 20),  // 20% lighter
+            lighter1: this.adjustColorLightness(baseColor, 10),  // 10% lighter
+            original: baseColor,                                 // Original
+            darker1: this.adjustColorLightness(baseColor, -10),  // 10% darker
+            darker2: this.adjustColorLightness(baseColor, -20)   // 20% darker
         };
 
-        // Her tonlamayı güncelle
+        // Update each variation
         Object.keys(variations).forEach(key => {
             const preview = document.getElementById(`${key}Preview`);
             if (preview) {
@@ -287,36 +346,27 @@ class ExtensionController {
             }
         });
 
-        // Orijinal preview'ı da güncelle
+        // Also update original preview
         const originalPreview = document.getElementById('originalPreview');
         if (originalPreview) {
             originalPreview.style.backgroundColor = baseColor;
             originalPreview.dataset.color = baseColor;
         }
-
-        // Konsol'da renk tonlarını göster
-        console.log('HSL Lightness bazlı renk tonları:', {
-            'Çok Açık (+20%)': variations.lighter2,
-            'Açık (+10%)': variations.lighter1, 
-            'Orijinal (0%)': variations.original,
-            'Koyu (-10%)': variations.darker1,
-            'Çok Koyu (-20%)': variations.darker2
-        });
     }
 
     selectColorVariation(variationType) {
-        // Aktif durumu güncelle
+        // Update active state
         document.querySelectorAll('.color-variation').forEach(v => {
             v.classList.remove('active');
     });
         document.querySelector(`[data-variation="${variationType}"]`).classList.add('active');
 
-        // Seçilen rengi al
+        // Get selected color
         const preview = document.getElementById(`${variationType}Preview`);
         const selectedColor = preview.dataset.color;
 
         if (selectedColor) {
-            // Ana renk kodlarını güncelle
+            // Update main color codes
             const hexCode = document.getElementById('hexCode');
             const rgbCode = document.getElementById('rgbCode');
             
@@ -327,11 +377,11 @@ class ExtensionController {
                 rgbCode.value = `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
     }
 
-            // Ana color picker'ı güncelle
+            // Update main color picker
             const colorPicker = document.getElementById('colorPicker');
             if (colorPicker) colorPicker.value = selectedColor;
 
-            // Hex kodu otomatik kopyala
+            // Auto-copy hex code
             this.autocopyhexCode(selectedColor.toUpperCase());
         }
     }
@@ -340,38 +390,39 @@ class ExtensionController {
         const inspectBtn = document.getElementById('inspectFont');
         
         if (this.isFontInspectorActive) {
-            // Inspector'ı durdur
+            // Stop inspector
             this.setInspectorState('font', false);
             try {
                 await chrome.runtime.sendMessage({ action: 'stopInspecting' });
             } catch (error) {
-                console.log('Stop inspecting failed:', error);
+                // Stop inspecting failed - continue silently
             }
             return;
         }
 
         try {
-            // Inspector'ı başlat
+            // Start inspector
             this.setInspectorState('font', true);
 
-            // Background script aracılığıyla inspector'ı başlat
+            // Start inspector through background script
             const response = await chrome.runtime.sendMessage({ 
                 action: 'startInspecting',
-                type: 'font'
+                type: 'font',
+                activeTab: this.currentTab
             });
             
             if (!response?.success) {
-                throw new Error(response?.error || 'Inspector başlatılamadı');
+                throw new Error(response?.error || 'Inspector could not be started');
             }
             
         } catch (error) {
-            console.error('Font inspector hatası:', error);
+            console.error('Font inspector error:', error);
             
-            // Kullanıcı dostu hata mesajı
+            // User-friendly error message
             if (error.message?.includes('Could not establish connection')) {
-                this.showStatus('Extension yeniden yükleniyor, sayfayı yenileyin (F5)', 'info');
+                this.showStatus('Extension is reloading, please refresh the page (F5)', 'info');
             } else {
-                this.showStatus('Element seçici başlatılamadı, sayfayı yenileyin', 'error');
+                this.showStatus('Element selector could not be started, please refresh the page', 'error');
             }
             
             this.setInspectorState('font', false);
@@ -380,35 +431,43 @@ class ExtensionController {
 
     async toggleSpacingInspector() {
         try {
-            // Önce mevcut durumu kontrol et
+            // First check current state
             const currentTabInfo = await chrome.tabs.query({ active: true, currentWindow: true });
             
             if (!currentTabInfo[0]) {
-                this.showStatus('Aktif tab bulunamadı', 'error');
+                this.showStatus('Active tab not found', 'error');
                 return;
             }
 
             this.currentTabId = currentTabInfo[0].id;
 
             if (this.isSpacingInspectorActive) {
-                // Inspectoru durdur
+                // Stop inspector
                 await chrome.tabs.sendMessage(this.currentTabId, { action: 'stopInspecting' });
                 this.setInspectorState('spacing', false);
             } else {
-                // Font inspector aktifse onu durdur
+                // If font inspector is active, stop it
                 if (this.isFontInspectorActive) {
                     await chrome.tabs.sendMessage(this.currentTabId, { action: 'stopInspecting' });
                     this.setInspectorState('font', false);
                 }
                 
-                // Spacing inspector'ı başlat
+                // Save current tab before starting inspection
+                chrome.runtime.sendMessage({
+                    action: 'setActiveTab',
+                    tab: this.currentTab
+                }).catch(error => {
+                    // Failed to save tab state - continue silently
+                });
+                
+                // Start spacing inspector
                 await chrome.tabs.sendMessage(this.currentTabId, { action: 'startInspecting' });
                 this.isSpacingInspectorActive = true;
                 this.setInspectorState('spacing', true);
             }
         } catch (error) {
             console.error('Spacing inspector error:', error);
-            this.showStatus('Inspector başlatılamadı. Sayfayı yenileyin.', 'error');
+            this.showStatus('Inspector could not be started. Please refresh the page.', 'error');
             this.setInspectorState('spacing', false);
         }
     }
@@ -444,29 +503,27 @@ class ExtensionController {
     updateFontDisplay(elementData) {
         if (!elementData) return;
 
-        console.log('Updating font display with:', elementData);
-
-        // Element data yapısını kontrol et
+        // Check element data structure
         const fontData = elementData.font || {};
         const elementInfo = elementData.element || {};
 
-        // Font size'ı farklı birimlerle hesapla
+        // Calculate font size in different units
         const fontSizePx = fontData.size || '16px';
         const fontSizeNum = parseFloat(fontSizePx);
         const fontSizePt = Math.round(fontSizeNum * 0.75 * 100) / 100 + 'pt';
         const fontSizeRem = Math.round(fontSizeNum / 16 * 100) / 100 + 'rem';
 
-        // Input alanlarını doldur
-        this.setInputValue('primaryFont', fontData.primaryFont || 'Bilinmiyor');
-        this.setInputValue('fontFamily', fontData.family || 'Bilinmiyor');
+        // Fill input fields
+        this.setInputValue('primaryFont', fontData.primaryFont || 'Unknown');
+        this.setInputValue('fontFamily', fontData.family || 'Unknown');
         this.setInputValue('fontWeight', fontData.weight || 'normal');
         this.setInputValue('fontSizePt', fontSizePt);
         this.setInputValue('fontSizePx', fontSizePx);
         this.setInputValue('fontSizeRem', fontSizeRem);
         this.setInputValue('elementInfo', `${elementInfo.tag}${elementInfo.class ? '.' + elementInfo.class : ''}`);
-        this.setInputValue('elementText', elementInfo.text || 'Metin bulunamadı');
+        this.setInputValue('elementText', elementInfo.text || 'Text not found');
 
-        // Renk bilgilerini işle ve hex formatında göster
+        // Process color information and display in hex format
         const colorData = elementData.colors || {};
         const textColor = this.convertColorToHex(colorData.text || fontData.color || 'rgb(0, 0, 0)');
         const backgroundColor = this.convertColorToHex(colorData.background || fontData.backgroundColor || 'rgba(0, 0, 0, 0)');
@@ -474,39 +531,38 @@ class ExtensionController {
         this.setInputValue('textColor', textColor);
         this.setInputValue('backgroundColor', backgroundColor);
 
-        // Input alanlarının görsel stillerini güncelle
+        // Update visual styles of input fields
         this.updateColorInputStyles(colorData.text || fontData.color, colorData.background || fontData.backgroundColor);
 
-        // Font preview'ı güncelle
-        const preview = document.getElementById('fontPreview');
-        if (preview && fontData.primaryFont && fontSizePx) {
-            preview.style.setProperty('--preview-font', fontData.primaryFont);
-            preview.style.setProperty('--preview-size', fontSizePx);
-            preview.style.fontFamily = fontData.primaryFont;
-            preview.style.fontSize = fontSizePx;
-            preview.style.fontWeight = fontData.weight || 'normal';
-        }
+        // Update font preview - remove reference to missing fontPreview element
+        // const preview = document.getElementById('fontPreview');
+        // if (preview && fontData.primaryFont && fontSizePx) {
+        //     preview.style.setProperty('--preview-font', fontData.primaryFont);
+        //     preview.style.setProperty('--preview-size', fontSizePx);
+        //     preview.style.fontFamily = fontData.primaryFont;
+        //     preview.style.fontSize = fontSizePx;
+        // }
 
-        // Placeholder'ı gizle, içeriği göster
+        // Hide placeholder, show content
         const placeholder = document.querySelector('#fontInfo .info-placeholder');
         const content = document.querySelector('#fontInfo .info-content');
         
         if (placeholder) placeholder.style.display = 'none';
         if (content) content.style.display = 'block';
 
-        this.showStatus('Font bilgileri alındı!', 'success');
+        this.showStatus('Font information retrieved!', 'success');
     }
 
-    // Renk formatını hex'e çeviren yardımcı fonksiyon
+    // Helper function to convert color format to hex
     convertColorToHex(color) {
-        if (!color || color === 'transparent') return 'Şeffaf';
+        if (!color || color === 'transparent') return 'Transparent';
         
-        // Eğer zaten hex formatındaysa
+        // If already in hex format
         if (color.startsWith('#')) {
             return color.toUpperCase();
         }
         
-        // RGB veya RGBA formatından hex'e çevir
+        // Convert from RGB or RGBA format to hex
         const rgbMatch = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
         if (rgbMatch) {
             const r = parseInt(rgbMatch[1]);
@@ -514,21 +570,21 @@ class ExtensionController {
             const b = parseInt(rgbMatch[3]);
             const a = rgbMatch[4] ? parseFloat(rgbMatch[4]) : 1;
             
-            // Eğer şeffaflık varsa ve tam şeffafsa
-            if (a === 0) return 'Şeffaf';
+            // If there's transparency and it's fully transparent
+            if (a === 0) return 'Transparent';
             
-            // RGB'yi hex'e çevir
+            // Convert RGB to hex
             const hex = this.rgbToHex(r, g, b);
             
-            // Eğer alpha değeri varsa belirt
+            // Indicate alpha value if present
             if (a < 1) {
-                return `${hex} (${Math.round(a * 100)}% opak)`;
+                return `${hex} (${Math.round(a * 100)}% opaque)`;
             }
             
             return hex;
         }
         
-        // Diğer renk formatları için (named colors vs.)
+        // For other color formats (named colors etc.)
         return color;
     }
 
@@ -555,15 +611,15 @@ class ExtensionController {
                 input.style.color = '';
             }, 200);
             
-            this.showStatus(`${input.value} kopyalandı!`, 'success');
+            this.showStatus(`${input.value} copied!`, 'success');
         } catch (error) {
-            console.error('Kopyalama hatası:', error);
-            this.showStatus('Kopyalama başarısız', 'error');
+            console.error('Copying error:', error);
+            this.showStatus('Copying failed', 'error');
         }
     }
 
     handleKeyboardShortcuts(e) {
-        // Tab geçişleri (1, 2)
+        // Tab transitions (1, 2)
         if (e.key === '1') {
             e.preventDefault();
             this.switchTab('color');
@@ -572,7 +628,7 @@ class ExtensionController {
             this.switchTab('font');
         }
         
-        // Kopyalama (Ctrl+C)
+        // Copy (Ctrl+C)
         else if (e.ctrlKey && e.key === 'c') {
             const activePanel = document.querySelector('.tab-panel.active');
             if (activePanel) {
@@ -584,7 +640,7 @@ class ExtensionController {
             }
         }
         
-        // Inspector iptal (ESC)
+        // Inspector cancel (ESC)
         else if (e.key === 'Escape') {
             if (this.isFontInspectorActive) {
                 e.preventDefault();
@@ -610,15 +666,13 @@ class ExtensionController {
     async autocopyhexCode(hexValue) {
         try {
             await navigator.clipboard.writeText(hexValue);
-            this.showStatus(`${hexValue} kopyalandı!`, 'success');
+            this.showStatus(`${hexValue} copied!`, 'success');
         } catch (error) {
-            console.error('Otomatik kopyalama hatası:', error);
+            console.error('Automatic copying error:', error);
         }
     }
 
     updateSpacingDisplay(elementData) {
-        console.log('Updating spacing display with data:', elementData);
-        
         const infoCard = document.getElementById('spacingInfo');
         const placeholder = infoCard.querySelector('.info-placeholder');
         const content = infoCard.querySelector('.info-content');
@@ -632,16 +686,16 @@ class ExtensionController {
         const spacing = elementData.spacing || {};
         
         // Margin değerleri
-        this.setInputValue('marginTop', spacing.marginTop || '0px');
-        this.setInputValue('marginRight', spacing.marginRight || '0px');
-        this.setInputValue('marginBottom', spacing.marginBottom || '0px');
-        this.setInputValue('marginLeft', spacing.marginLeft || '0px');
+        // this.setInputValue('marginTop', spacing.marginTop || '0px');
+        // this.setInputValue('marginRight', spacing.marginRight || '0px');
+        // this.setInputValue('marginBottom', spacing.marginBottom || '0px');
+        // this.setInputValue('marginLeft', spacing.marginLeft || '0px');
         
         // Padding değerleri
-        this.setInputValue('paddingTop', spacing.paddingTop || '0px');
-        this.setInputValue('paddingRight', spacing.paddingRight || '0px');
-        this.setInputValue('paddingBottom', spacing.paddingBottom || '0px');
-        this.setInputValue('paddingLeft', spacing.paddingLeft || '0px');
+        // this.setInputValue('paddingTop', spacing.paddingTop || '0px');
+        // this.setInputValue('paddingRight', spacing.paddingRight || '0px');
+        // this.setInputValue('paddingBottom', spacing.paddingBottom || '0px');
+        // this.setInputValue('paddingLeft', spacing.paddingLeft || '0px');
         
         // Element bilgileri
         const tagName = elementData.tagName || 'unknown';
@@ -822,8 +876,6 @@ class ExtensionController {
                 preview.dataset.color = compatibleColors[key];
             }
         });
-
-        console.log('Uyumlu renkler:', compatibleColors);
     }
 
     // Gelişmiş renk paleti oluşturma fonksiyonu
@@ -1066,59 +1118,6 @@ class ExtensionController {
         // Bu fonksiyon artık kullanılmıyor, updateCompatibleColors kullanılıyor
     }
 
-    // Hex kod input'u işleme
-    handleHexInput(value, isBlur = false) {
-        // Hex formatını düzenle
-        let hexValue = value.trim();
-        
-        // # işaretini ekle
-        if (hexValue && !hexValue.startsWith('#')) {
-            hexValue = '#' + hexValue;
-        }
-        
-        // Hex formatını validate et
-        const hexPattern = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
-        
-        if (hexPattern.test(hexValue)) {
-            // Geçerli hex kodu
-            this.updateColorFromInput(hexValue);
-            this.clearInputError('hexCode');
-        } else if (isBlur && hexValue) {
-            // Blur olayında geçersiz format varsa hata göster
-            this.showInputError('hexCode', 'Geçersiz hex format (örn: #FF5733)');
-        }
-    }
-
-    // RGB kod input'u işleme
-    handleRgbInput(value, isBlur = false) {
-        let rgbValue = value.trim();
-        
-        // RGB formatını validate et
-        const rgbPattern = /^rgb\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/;
-        const match = rgbValue.match(rgbPattern);
-        
-        if (match) {
-            const r = parseInt(match[1]);
-            const g = parseInt(match[2]);
-            const b = parseInt(match[3]);
-            
-            // RGB değerlerinin 0-255 arasında olduğunu kontrol et
-            if (r >= 0 && r <= 255 && g >= 0 && g <= 255 && b >= 0 && b <= 255) {
-                // RGB'yi hex'e çevir
-                const hexValue = this.rgbToHex(r, g, b);
-                this.updateColorFromInput(hexValue);
-                this.clearInputError('rgbCode');
-            } else {
-                if (isBlur) {
-                    this.showInputError('rgbCode', 'RGB değerleri 0-255 arasında olmalı');
-                }
-            }
-        } else if (isBlur && rgbValue) {
-            // Blur olayında geçersiz format varsa hata göster
-            this.showInputError('rgbCode', 'Geçersiz RGB format (örn: rgb(255, 87, 51))');
-        }
-    }
-
     // Input'tan gelen renk ile tüm sistemi güncelle
     updateColorFromInput(hexColor) {
         // Ana renk preview'ını güncelle
@@ -1165,7 +1164,7 @@ class ExtensionController {
         });
     }
 
-    // Input hata gösterme
+    // Input error handling
     showInputError(inputId, message) {
         const input = document.getElementById(inputId);
         if (input) {
@@ -1176,13 +1175,66 @@ class ExtensionController {
         this.showStatus(message, 'error');
     }
 
-    // Input hata temizleme
+    // Clear input error
     clearInputError(inputId) {
         const input = document.getElementById(inputId);
         if (input) {
             input.style.borderColor = '#e1e8ed';
             input.style.backgroundColor = 'white';
-            input.title = inputId === 'hexCode' ? 'Hex kod girin (örn: #FF5733)' : 'RGB kod girin (örn: rgb(255, 87, 51))';
+            input.title = inputId === 'hexCode' ? 'Enter hex code (e.g: #FF5733)' : 'Enter RGB code (e.g: rgb(255, 87, 51))';
+        }
+    }
+
+    // Hex code input handling
+    handleHexInput(value, isBlur = false) {
+        // Clean hex format
+        let hexValue = value.trim();
+        
+        // Add # symbol
+        if (hexValue && !hexValue.startsWith('#')) {
+            hexValue = '#' + hexValue;
+        }
+        
+        // Validate hex format
+        const hexPattern = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
+        
+        if (hexPattern.test(hexValue)) {
+            // Valid hex code
+            this.updateColorFromInput(hexValue);
+            this.clearInputError('hexCode');
+        } else if (isBlur && hexValue) {
+            // Show error on blur event if invalid format
+            this.showInputError('hexCode', 'Invalid hex format (e.g: #FF5733)');
+        }
+    }
+
+    // RGB code input handling
+    handleRgbInput(value, isBlur = false) {
+        let rgbValue = value.trim();
+        
+        // Validate RGB format
+        const rgbPattern = /^rgb\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/;
+        const match = rgbValue.match(rgbPattern);
+        
+        if (match) {
+            const r = parseInt(match[1]);
+            const g = parseInt(match[2]);
+            const b = parseInt(match[3]);
+            
+            // Check that RGB values are between 0-255
+            if (r >= 0 && r <= 255 && g >= 0 && g <= 255 && b >= 0 && b <= 255) {
+                // Convert RGB to hex
+                const hexValue = this.rgbToHex(r, g, b);
+                this.updateColorFromInput(hexValue);
+                this.clearInputError('rgbCode');
+            } else {
+                if (isBlur) {
+                    this.showInputError('rgbCode', 'RGB values must be between 0-255');
+                }
+            }
+        } else if (isBlur && rgbValue) {
+            // Show error on blur event if invalid format
+            this.showInputError('rgbCode', 'Invalid RGB format (e.g: rgb(255, 87, 51))');
         }
     }
 }

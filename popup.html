@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Renk & Font Seçici</title>
+    <title>Color & Font Picker</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -27,64 +27,64 @@
             <!-- Color Tab -->
             <div class="tab-panel active" id="color-panel">
         
-                <!-- Gizli color picker -->
+                <!-- Hidden color picker -->
                 <input type="color" id="colorPicker" value="#00D2D5" style="display: none;">
         
-                <!-- Ana renk seçim alanı -->
+                <!-- Main color selection area -->
                 <div class="main-color-section">
-                    <div class="color-preview main-color" id="colorPreview" title="Renk seçmek için tıklayın"></div>
+                    <div class="color-preview main-color" id="colorPreview" title="Click to select color"></div>
                     <div class="color-codes">
                         <div class="color-code-group">
-                            <input type="text" id="hexCode" value="#00D2D5" title="Hex kod girin (örn: #FF5733)" placeholder="#000000">
+                            <input type="text" id="hexCode" value="#00D2D5" title="Enter hex code (e.g: #FF5733)" placeholder="#000000">
                         </div>
                         <div class="color-code-group">
-                            <input type="text" id="rgbCode" value="rgb(0, 210, 213)" title="RGB kod girin (örn: rgb(255, 87, 51))" placeholder="rgb(0, 0, 0)">
+                            <input type="text" id="rgbCode" value="rgb(0, 210, 213)" title="Enter RGB code (e.g: rgb(255, 87, 51))" placeholder="rgb(0, 0, 0)">
                         </div>
                     </div>
                 </div>
 
-                <!-- Renk tonlamaları -->
+                <!-- Color variations -->
                 <div class="color-variations">
                     <div class="color-palette">
-                        <div class="color-variation" data-variation="lighter2" title="2 ton açık">
+                        <div class="color-variation" data-variation="lighter2" title="2 shades lighter">
                             <div class="variation-preview" id="lighter2Preview"></div>
                             <span class="variation-label">+2</span>
                         </div>
-                        <div class="color-variation" data-variation="lighter1" title="1 ton açık">
+                        <div class="color-variation" data-variation="lighter1" title="1 shade lighter">
                             <div class="variation-preview" id="lighter1Preview"></div>
                             <span class="variation-label">+1</span>
                         </div>
-                        <div class="color-variation active" data-variation="original" title="Orijinal renk">
+                        <div class="color-variation active" data-variation="original" title="Original color">
                             <div class="variation-preview" id="originalPreview"></div>
                             <span class="variation-label">0</span>
                         </div>
-                        <div class="color-variation" data-variation="darker1" title="1 ton koyu">
+                        <div class="color-variation" data-variation="darker1" title="1 shade darker">
                             <div class="variation-preview" id="darker1Preview"></div>
                             <span class="variation-label">-1</span>
                         </div>
-                        <div class="color-variation" data-variation="darker2" title="2 ton koyu">
+                        <div class="color-variation" data-variation="darker2" title="2 shades darker">
                             <div class="variation-preview" id="darker2Preview"></div>
                             <span class="variation-label">-2</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Uyumlu renkler -->
+                <!-- Compatible colors -->
                 <div class="compatible-colors">
                     <div class="compatible-palette">
-                        <div class="compatible-color" data-harmony="analogous1" title="Analog renk (30° fark)">
+                        <div class="compatible-color" data-harmony="analogous1" title="Analogous color (30° difference)">
                             <div class="compatible-preview" id="analogous1Preview"></div>
                         </div>
-                        <div class="compatible-color" data-harmony="complementary" title="Tamamlayıcı renk (180° fark)">
+                        <div class="compatible-color" data-harmony="complementary" title="Complementary color (180° difference)">
                             <div class="compatible-preview" id="complementaryPreview"></div>
                         </div>
-                        <div class="compatible-color" data-harmony="triadic1" title="Üçlü uyum 1 (120° fark)">
+                        <div class="compatible-color" data-harmony="triadic1" title="Triadic harmony 1 (120° difference)">
                             <div class="compatible-preview" id="triadic1Preview"></div>
                         </div>
-                        <div class="compatible-color" data-harmony="triadic2" title="Üçlü uyum 2 (240° fark)">
+                        <div class="compatible-color" data-harmony="triadic2" title="Triadic harmony 2 (240° difference)">
                             <div class="compatible-preview" id="triadic2Preview"></div>
                         </div>
-                        <div class="compatible-color" data-harmony="analogous2" title="Doygunluk azaltılmış">
+                        <div class="compatible-color" data-harmony="analogous2" title="Reduced saturation">
                             <div class="compatible-preview" id="analogous2Preview"></div>
                         </div>
                     </div>
@@ -97,7 +97,7 @@
                 </div>
                 
                 <div class="info-card" id="fontInfo">
-                    <button class="inspect-btn" id="inspectFont" title="Sayfadaki bir elementi seçin">
+                    <button class="inspect-btn" id="inspectFont" title="Select an element on the page">
                         🔍
                     </button>
                     
@@ -106,7 +106,7 @@
                         <div class="info-row">
                             <div class="dual-input-container">
                                 <div class="input-group">
-                                    <input type="text" id="elementText" readonly class="copyable-input" placeholder="Element Metni" title="Kopyalamak için tıklayın">
+                                    <input type="text" id="elementText" readonly class="copyable-input" placeholder="Element Text" title="Click to copy">
                                 </div>
                                 <div class="input-group">
                                 </div>
@@ -114,16 +114,16 @@
                         </div>
 
                         <div class="info-row">
-                            <input type="text" id="elementInfo" readonly class="copyable-input" placeholder="Element Bilgisi" title="Kopyalamak için tıklayın">
+                            <input type="text" id="elementInfo" readonly class="copyable-input" placeholder="Element Info" title="Click to copy">
                         </div>
 
                         <div class="info-row">
                             <div class="dual-input-container">
                                 <div class="input-group">
-                                    <input type="text" id="textColor" readonly class="copyable-input" placeholder="Yazı Rengi" title="Kopyalamak için tıklayın">
+                                    <input type="text" id="textColor" readonly class="copyable-input" placeholder="Text Color" title="Click to copy">
                                 </div>
                                 <div class="input-group">
-                                    <input type="text" id="backgroundColor" readonly class="copyable-input" placeholder="Arka Plan Rengi" title="Kopyalamak için tıklayın">
+                                    <input type="text" id="backgroundColor" readonly class="copyable-input" placeholder="Background Color" title="Click to copy">
                                 </div>
                             </div>
                         </div>
@@ -131,10 +131,10 @@
                         <div class="info-row">
                             <div class="dual-input-container">
                                 <div class="input-group">
-                                    <input type="text" id="primaryFont" readonly class="copyable-input" placeholder="Ana Font" title="Kopyalamak için tıklayın">
+                                    <input type="text" id="primaryFont" readonly class="copyable-input" placeholder="Primary Font" title="Click to copy">
                                 </div>
                                 <div class="input-group">
-                                    <input type="text" id="fontFamily" readonly class="copyable-input" placeholder="Font Family" title="Kopyalamak için tıklayın">
+                                    <input type="text" id="fontFamily" readonly class="copyable-input" placeholder="Font Family" title="Click to copy">
                                 </div>
                             </div>
                         </div>
@@ -142,10 +142,10 @@
                         <div class="info-row">
                             <div class="dual-input-container">
                                 <div class="input-group">
-                                    <input type="text" id="fontWeight" readonly class="copyable-input" placeholder="Ağırlık" title="Kopyalamak için tıklayın">
+                                    <input type="text" id="fontWeight" readonly class="copyable-input" placeholder="Weight" title="Click to copy">
                                 </div>
                                 <div class="input-group">
-                                    <input type="text" id="fontSizePt" readonly class="copyable-input" placeholder="Punto" title="Kopyalamak için tıklayın">
+                                    <input type="text" id="fontSizePt" readonly class="copyable-input" placeholder="Point" title="Click to copy">
                                 </div>
                             </div>
                         </div>
@@ -153,10 +153,10 @@
                         <div class="info-row">
                             <div class="dual-input-container">
                                 <div class="input-group">
-                                    <input type="text" id="fontSizePx" readonly class="copyable-input" placeholder="Piksel" title="Kopyalamak için tıklayın">
+                                    <input type="text" id="fontSizePx" readonly class="copyable-input" placeholder="Pixel" title="Click to copy">
                                 </div>
                                 <div class="input-group">
-                                    <input type="text" id="fontSizeRem" readonly class="copyable-input" placeholder="REM" title="Kopyalamak için tıklayın">
+                                    <input type="text" id="fontSizeRem" readonly class="copyable-input" placeholder="REM" title="Click to copy">
                                 </div>
                             </div>
                         </div>
@@ -174,7 +174,7 @@
                     <div class="info-content">
                         <!-- Box Model Preview -->
                         <div class="box-model-container">
-                            <button class="inspect-btn" id="inspectSpacing" title="Sayfadaki bir elementi seçin">
+                            <button class="inspect-btn" id="inspectSpacing" title="Select an element on the page">
                                 🔍
                             </button>
                             <div class="box-model-preview">
@@ -197,10 +197,10 @@
                         <!-- Element Info -->
                         <div class="spacing-section">
                             <div class="element-info-row">
-                                <input type="text" id="spacingElementInfo" readonly class="copyable-input" placeholder="Element" title="Kopyalamak için tıklayın">
+                                <input type="text" id="spacingElementInfo" readonly class="copyable-input" placeholder="Element" title="Click to copy">
                             </div>
                             <div class="element-info-row">
-                                <input type="text" id="boxSizing" readonly class="copyable-input" placeholder="Box Sizing" title="Kopyalamak için tıklayın">
+                                <input type="text" id="boxSizing" readonly class="copyable-input" placeholder="Box Sizing" title="Click to copy">
                             </div>
                         </div>
                     </div>

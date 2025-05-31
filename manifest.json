@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Renk & Font Seçici",
+  "name": "Color & Font Picker",
   "version": "2.1",
-  "description": "Kompakt tasarım ile renk, font ve punto bilgilerini tespit eden gelişmiş seçici eklentisi.",
+  "description": "Advanced picker extension that detects color, font and size information with compact design.",
   "permissions": [
     "clipboardWrite",
     "activeTab",
@@ -23,6 +23,6 @@
   ],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Renk & Font Seçici"
+    "default_title": "Color & Font Picker"
   }
 } 

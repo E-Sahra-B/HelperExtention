@@ -1,18 +1,19 @@
 // Content Script - Element Detection & CSS Extraction
-// Bu script web sayfalarında elementleri tespit eder ve CSS özelliklerini alır
+// This script detects elements on web pages and extracts CSS properties
 
 let isInspecting = false;
 let highlightedElement = null;
 let lastSelectedData = null;
 
-// Highlight overlay elementi oluştur
+// Create highlight overlay element
 const highlightOverlay = document.createElement('div');
 highlightOverlay.id = 'font-inspector-highlight';
 document.body.appendChild(highlightOverlay);
 
-// Background script ile iletişim için mesaj dinleyici
+// Message listener for communication with background script
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    console.log('Content script received message:', request.action);
+    // Remove debug console.log
+    // console.log('Content script received message:', request.action);
     
     switch (request.action) {
         case 'ping':
@@ -37,23 +38,24 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 function startInspecting() {
-    console.log('Starting inspection mode');
+    // Remove debug console.log
+    // console.log('Starting inspection mode');
     isInspecting = true;
     document.body.style.cursor = 'crosshair';
     document.body.classList.add('font-inspector-active');
     
-    // Event listener'ları ekle
+    // Add event listeners
     document.addEventListener('mouseover', handleMouseOver, true);
     document.addEventListener('mouseout', handleMouseOut, true);
     document.addEventListener('click', handleClick, true);
     
-    // Sayfa scrolling'ini engelle
+    // Prevent page scrolling
     document.addEventListener('scroll', preventScroll, true);
     
-    // Escape tuşu ile çıkış
+    // Exit with escape key
     document.addEventListener('keydown', handleKeyDown, true);
     
-    // Background'a başarı mesajı gönder
+    // Send success message to background
     chrome.runtime.sendMessage({
         action: 'inspectionStarted',
         success: true
@@ -63,22 +65,23 @@ function startInspecting() {
 }
 
 function stopInspecting() {
-    console.log('Stopping inspection mode');
+    // Remove debug console.log
+    // console.log('Stopping inspection mode');
     isInspecting = false;
     document.body.style.cursor = '';
     document.body.classList.remove('font-inspector-active');
     
-    // Event listener'ları kaldır
+    // Remove event listeners
     document.removeEventListener('mouseover', handleMouseOver, true);
     document.removeEventListener('mouseout', handleMouseOut, true);
     document.removeEventListener('click', handleClick, true);
     document.removeEventListener('scroll', preventScroll, true);
     document.removeEventListener('keydown', handleKeyDown, true);
     
-    // Highlight'ı gizle
+    // Hide highlight
     hideHighlight();
     
-    // Background'a durdurma mesajı gönder
+    // Send stop message to background
     chrome.runtime.sendMessage({
         action: 'inspectionStopped',
         success: true
@@ -101,7 +104,7 @@ function handleMouseOver(event) {
 
 function handleMouseOut(event) {
     if (!isInspecting) return;
-    // Highlight'ı kaldırma, çünkü sürekli güncellenecek
+    // Don't remove highlight as it will be continuously updated
 }
 
 function handleClick(event) {
@@ -112,18 +115,20 @@ function handleClick(event) {
     
     const element = event.target;
     if (element && element !== highlightOverlay && element.id !== 'font-inspector-highlight') {
-        console.log('Element clicked:', element);
+        // Remove debug console.log statements
+        // console.log('Element clicked:', element);
         const elementData = extractElementData(element);
-        console.log('Element data extracted:', elementData);
+        // console.log('Element data extracted:', elementData);
         
         lastSelectedData = elementData;
         
-        // Background'a veri gönder (background popup'a iletecek)
+        // Send data to background (background will relay to popup)
         chrome.runtime.sendMessage({
             action: 'elementSelected',
             data: elementData
         }).then(() => {
-            console.log('Element data sent to background');
+            // Remove debug console.log
+            // console.log('Element data sent to background');
         }).catch(error => {
             console.error('Error sending element data:', error);
         });
@@ -174,17 +179,17 @@ function extractElementData(element) {
     try {
         const computedStyle = window.getComputedStyle(element);
         
-        // Font bilgileri
+        // Font information
         const fontFamily = computedStyle.fontFamily;
         const fontSize = computedStyle.fontSize;
         const fontWeight = computedStyle.fontWeight;
         const fontStyle = computedStyle.fontStyle;
         
-        // Renk bilgileri
+        // Color information
         const color = computedStyle.color;
         const backgroundColor = computedStyle.backgroundColor;
         
-        // Spacing bilgileri (margin, padding, border)
+        // Spacing information (margin, padding, border)
         const spacing = {
             marginTop: computedStyle.marginTop,
             marginRight: computedStyle.marginRight,
@@ -201,37 +206,38 @@ function extractElementData(element) {
             boxSizing: computedStyle.boxSizing
         };
         
-        // Element boyut bilgileri
+        // Element dimension information
         const rect = element.getBoundingClientRect();
         spacing.contentWidth = Math.round(rect.width) + 'px';
         spacing.contentHeight = Math.round(rect.height) + 'px';
         
-        // Element bilgileri
+        // Element information
         const tagName = element.tagName.toLowerCase();
         const className = element.className || '';
         const textContent = element.textContent ? element.textContent.trim().substring(0, 50) : '';
         
-        // Font size'ı punto'ya çevir (px to pt: pt = px * 0.75)
+        // Convert font size to points (px to pt: pt = px * 0.75)
         const fontSizeInPx = parseFloat(fontSize);
         const fontSizeInPt = Math.round(fontSizeInPx * 0.75 * 100) / 100;
         
-        // Font family'den ilk fontu al
+        // Get first font from font family
         const primaryFont = fontFamily.split(',')[0].replace(/["']/g, '').trim();
         
-        console.log('Extracted font info:', {
-            fontFamily,
-            fontSize,
-            fontWeight,
-            primaryFont
-        });
+        // Remove debug console.log statements
+        // console.log('Extracted font info:', {
+        //     fontFamily,
+        //     fontSize,
+        //     fontWeight,
+        //     primaryFont
+        // });
         
-        console.log('Extracted spacing info:', spacing);
+        // console.log('Extracted spacing info:', spacing);
         
         return {
             element: {
                 tag: tagName,
                 class: className,
-                text: textContent || 'Metin bulunamadı'
+                text: textContent || 'Text not found'
             },
             font: {
                 family: fontFamily,
@@ -255,8 +261,8 @@ function extractElementData(element) {
     } catch (error) {
         console.error('Error extracting element data:', error);
         return {
-            element: { tag: 'error', class: '', text: 'Veri alınırken hata oluştu' },
-            font: { family: 'Bilinmiyor', primaryFont: 'Bilinmiyor', size: '0px', sizeInPt: '0pt', weight: 'normal', style: 'normal' },
+            element: { tag: 'error', class: '', text: 'Error occurred while retrieving data' },
+            font: { family: 'Unknown', primaryFont: 'Unknown', size: '0px', sizeInPt: '0pt', weight: 'normal', style: 'normal' },
             colors: { text: '#000', background: '#fff', textHex: '#000000', backgroundHex: '#ffffff' },
             spacing: { marginTop: '0px', marginRight: '0px', marginBottom: '0px', marginLeft: '0px', paddingTop: '0px', paddingRight: '0px', paddingBottom: '0px', paddingLeft: '0px', boxSizing: 'content-box' },
             tagName: 'error',
@@ -266,7 +272,7 @@ function extractElementData(element) {
     }
 }
 
-// RGB değerini HEX'e çevir
+// Convert RGB value to HEX
 function rgbToHex(rgb) {
     if (!rgb || rgb === 'rgba(0, 0, 0, 0)' || rgb === 'transparent') {
         return 'transparent';
@@ -282,24 +288,25 @@ function rgbToHex(rgb) {
     return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
 }
 
-// Sayfa yüklendiğinde background'a hazır mesajı gönder
+// Send ready message to background when page loads
 function notifyReady() {
-    console.log('Content script ready on:', window.location.href);
     chrome.runtime.sendMessage({
-        action: 'contentScriptReady',
-        url: window.location.href
+        action: 'contentScriptReady'
     }).catch(error => {
-        console.error('Error sending ready message:', error);
+        console.error('Error notifying ready state:', error);
     });
+    
+    // Remove debug console.log
+    // console.log('Content script ready on:', window.location.href);
 }
 
-// Sayfa yüklendiğinde
+// When page loads
 window.addEventListener('load', notifyReady);
 
-// DOM ready durumunda da gönder
+// Also send on DOM ready
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', notifyReady);
 } else {
-    // Zaten yüklü
+    // Already loaded
     notifyReady();
 } 
