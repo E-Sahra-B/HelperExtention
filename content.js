@@ -184,6 +184,28 @@ function extractElementData(element) {
         const color = computedStyle.color;
         const backgroundColor = computedStyle.backgroundColor;
         
+        // Spacing bilgileri (margin, padding, border)
+        const spacing = {
+            marginTop: computedStyle.marginTop,
+            marginRight: computedStyle.marginRight,
+            marginBottom: computedStyle.marginBottom,
+            marginLeft: computedStyle.marginLeft,
+            paddingTop: computedStyle.paddingTop,
+            paddingRight: computedStyle.paddingRight,
+            paddingBottom: computedStyle.paddingBottom,
+            paddingLeft: computedStyle.paddingLeft,
+            borderTop: computedStyle.borderTopWidth,
+            borderRight: computedStyle.borderRightWidth,
+            borderBottom: computedStyle.borderBottomWidth,
+            borderLeft: computedStyle.borderLeftWidth,
+            boxSizing: computedStyle.boxSizing
+        };
+        
+        // Element boyut bilgileri
+        const rect = element.getBoundingClientRect();
+        spacing.contentWidth = Math.round(rect.width) + 'px';
+        spacing.contentHeight = Math.round(rect.height) + 'px';
+        
         // Element bilgileri
         const tagName = element.tagName.toLowerCase();
         const className = element.className || '';
@@ -202,6 +224,8 @@ function extractElementData(element) {
             fontWeight,
             primaryFont
         });
+        
+        console.log('Extracted spacing info:', spacing);
         
         return {
             element: {
@@ -223,6 +247,9 @@ function extractElementData(element) {
                 textHex: rgbToHex(color),
                 backgroundHex: rgbToHex(backgroundColor)
             },
+            spacing: spacing,
+            tagName: tagName,
+            className: className,
             timestamp: new Date().toLocaleTimeString()
         };
     } catch (error) {
@@ -231,6 +258,9 @@ function extractElementData(element) {
             element: { tag: 'error', class: '', text: 'Veri alınırken hata oluştu' },
             font: { family: 'Bilinmiyor', primaryFont: 'Bilinmiyor', size: '0px', sizeInPt: '0pt', weight: 'normal', style: 'normal' },
             colors: { text: '#000', background: '#fff', textHex: '#000000', backgroundHex: '#ffffff' },
+            spacing: { marginTop: '0px', marginRight: '0px', marginBottom: '0px', marginLeft: '0px', paddingTop: '0px', paddingRight: '0px', paddingBottom: '0px', paddingLeft: '0px', boxSizing: 'content-box' },
+            tagName: 'error',
+            className: '',
             timestamp: new Date().toLocaleTimeString()
         };
     }

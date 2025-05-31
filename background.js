@@ -5,6 +5,7 @@ let extensionState = {
     isInspecting: false,
     inspectionType: null,
     lastElementData: null,
+    lastSpacingData: null,
     contentScriptReady: false,
     activeTabId: null
 };
@@ -47,11 +48,22 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         case 'elementSelected':
             // Content script'ten element seçimi geldi
             extensionState.lastElementData = message.data;
+            // Spacing verisini de ayrıca sakla
+            if (message.data.spacing) {
+                extensionState.lastSpacingData = message.data;
+            }
             extensionState.isInspecting = false;
             extensionState.inspectionType = null;
             
             // Popup'a bildir (eğer açıksa)
             broadcastToPopup('elementSelected', message.data);
+            sendResponse({ success: true });
+            break;
+
+        case 'saveSpacingData':
+            // Spacing verisini kaydet
+            extensionState.lastSpacingData = message.data;
+            console.log('Spacing data saved:', message.data);
             sendResponse({ success: true });
             break;
 

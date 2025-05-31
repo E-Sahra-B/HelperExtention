@@ -1,12 +1,15 @@
 {
   "manifest_version": 3,
   "name": "Renk & Font Seçici",
-  "version": "2.0",
-  "description": "Renk, font ve punto bilgilerini tespit eden gelişmiş seçici eklentisi.",
+  "version": "2.1",
+  "description": "Kompakt tasarım ile renk, font ve punto bilgilerini tespit eden gelişmiş seçici eklentisi.",
   "permissions": [
     "clipboardWrite",
     "activeTab",
     "scripting"
+  ],
+  "host_permissions": [
+    "<all_urls>"
   ],
   "background": {
     "service_worker": "background.js"
